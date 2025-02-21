@@ -16,6 +16,14 @@ const UPDATE_PROFILE = "AUTH.UPDATE_PROFILE";
 
 const reducer = (state, action) => {
   switch (action.type) {
+    case INITIALIZE:
+      const { isAuthenticated, user } = action.payload;
+      return {
+        ...state,
+        isInitialized: true,
+        isAuthenticated,
+        user,
+      };
     case LOGIN_SUCCESS:
       return {
         ...state,
@@ -53,6 +61,39 @@ const setSession = (accessToken) => {
 
 function AuthProvider({ children }) {
   const [state, dispatch] = useReducer(reducer, initialState);
+
+  useEffect(() => {
+    const initialize = async () => {
+      try {
+        const accessToken = window.localStorage.getItem("accessToken");
+
+        if (accessToken && isValidToken(accessToken)) {
+          setSession(accessToken);
+
+          const response = await apiService.get("/users/me");
+          const user = response.data;
+
+          dispatch({
+            type: INITIALIZE,
+            payload: { isAuthenticated: true, user },
+          });
+        } else {
+          setSession(null);
+          dispatch({
+            type: INITIALIZE,
+            payload: { isAuthenticated: false, user: null },
+          });
+        }
+      } catch (error) {
+        setSession(null);
+        dispatch({
+          type: INITIALIZE,
+          payload: { isAuthenticated: false, user: null },
+        });
+      }
+    };
+  }, []);
+
   const login = async ({ email, password }, callback) => {
     const response = await apiService.post("/auth/login", { email, password });
     const { user, accessToken } = response.data;
