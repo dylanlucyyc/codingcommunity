@@ -92,6 +92,7 @@ function AuthProvider({ children }) {
         });
       }
     };
+    initialize();
   }, []);
 
   const login = async ({ email, password }, callback) => {
